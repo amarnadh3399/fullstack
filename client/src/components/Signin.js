@@ -6,7 +6,8 @@ import axios from "axios";
 import config from "./config";
 import { useDispatch } from "react-redux";
 import { login } from "../utils/userSlice";
-import Spinner from "./Spinner"; // Assuming you have a Spinner component
+import Spinner from "./Spinner";
+import { FiMail, FiLock, FiArrowRight } from "react-icons/fi";
 
 const Base_URL = config.baseURL;
 
@@ -15,7 +16,8 @@ function Signin() {
   const dispatch = useDispatch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false); // State for loading indicator
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleNavigateToSignUp = () => {
     navigate("/sign-up");
@@ -23,15 +25,21 @@ function Signin() {
 
   const handleEmailChange = (e) => {
     setEmail(e.target.value);
+    setErrorMessage("");
   };
 
   const handlePasswordChange = (e) => {
     setPassword(e.target.value);
+    setErrorMessage("");
   };
 
   const handleSignIn = async (e) => {
     e.preventDefault();
-    setLoading(true); // Set loading state to true when starting sign-in
+    if (!email || !password) {
+      setErrorMessage("Please fill in all fields");
+      return;
+    }
+    setLoading(true);
 
     const data = {
       email: email,
@@ -43,28 +51,18 @@ function Signin() {
         withCredentials: true,
       });
 
-      if (res.status === 401) {
-        alert("Invalid Credentials");
-      } else if (res.status === 500) {
-        alert("Internal Server Error");
-      }
-
       const token = res.data.token;
-
       localStorage.setItem("authToken", token);
-      dispatch(
-        login({
-          email: email,
-          password: password,
-        })
-      );
-      alert("Successfully signed in, you can now raise your concerns!");
+      dispatch(login({ email: email, password: password }));
+      
       navigate("/home");
     } catch (error) {
       console.error("Error during login:", error);
-      alert("Wrong Credentials. Please try again.");
+      setErrorMessage(
+        error.response?.data?.message || "Wrong credentials. Please try again."
+      );
     } finally {
-      setLoading(false); // Set loading state to false after login attempt completes
+      setLoading(false);
     }
   };
 
@@ -72,42 +70,77 @@ function Signin() {
     <>
       <Navbar />
       <div className="signin-container">
-        <h2>Sign In</h2>
-        <div className="form-group">
-          <label htmlFor="email">Email:</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={email}
-            onChange={handleEmailChange}
-            placeholder="Enter your email"
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="password">Password:</label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            value={password}
-            onChange={handlePasswordChange}
-            placeholder="Enter your password"
-          />
-        </div>
-        <div>
-          <button
-            className="btn-signin"
-            onClick={handleSignIn}
-            disabled={loading}
-          >
-            {loading ? <Spinner /> : "Sign In"}{" "}
-            {/* Show Spinner component when loading */}
-          </button>
-          <p className="btn-spread">Not a member?</p>
-          <button className="btn-signin" onClick={handleNavigateToSignUp}>
-            Sign Up
-          </button>
+        <div className="auth-card">
+          <div className="card-header">
+            <h2>Welcome Back</h2>
+            <p>Sign in to continue to your account</p>
+          </div>
+
+          <form onSubmit={handleSignIn} className="auth-form">
+            <div className="input-group">
+              <FiMail className="input-icon" />
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={handleEmailChange}
+                placeholder="Enter your email"
+                required
+              />
+              <label htmlFor="email" className="input-label">
+                Email
+              </label>
+            </div>
+
+            <div className="input-group">
+              <FiLock className="input-icon" />
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={handlePasswordChange}
+                placeholder="Enter your password"
+                required
+              />
+              <label htmlFor="password" className="input-label">
+                Password
+              </label>
+            </div>
+
+            {errorMessage && (
+              <div className="error-message">
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="auth-btn primary"
+              disabled={loading}
+            >
+              {loading ? (
+                <Spinner size="small" />
+              ) : (
+                <>
+                  Sign In
+                  <FiArrowRight className="btn-icon" />
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="auth-footer">
+            <span className="divider">OR</span>
+            <button
+              className="auth-btn secondary"
+              onClick={handleNavigateToSignUp}
+            >
+              Create New Account
+            </button>
+            <a href="/forgot-password" className="forgot-password">
+              Forgot Password?
+            </a>
+          </div>
         </div>
       </div>
     </>
